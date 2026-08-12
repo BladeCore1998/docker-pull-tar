@@ -53,6 +53,9 @@ watch(
   border-radius: 8px;
   padding: 12px;
   margin-top: 16px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 .log-header {
   display: flex;
@@ -65,7 +68,9 @@ watch(
   font-weight: bold;
 }
 .log-content {
-  height: 200px;
+  height: auto;
+  min-height: 0;
+  flex: 1 1 auto;
   overflow-y: auto;
   font-family: monospace;
   font-size: 12px;

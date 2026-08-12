@@ -73,5 +73,7 @@ body {
 }
 .app-main {
   background: #f5f7fa;
+  min-height: 0;
+  box-sizing: border-box;
 }
 </style>

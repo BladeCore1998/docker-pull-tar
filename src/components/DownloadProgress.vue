@@ -108,8 +108,9 @@ const layerStatusText = (status: LayerStatus): string => {
   color: #409eff;
 }
 .progress-layers {
-  max-height: 150px;
+  max-height: 120px;
   overflow-y: auto;
+  min-height: 0;
 }
 .layer-item {
   margin-bottom: 8px;

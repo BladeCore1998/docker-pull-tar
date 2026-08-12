@@ -8,6 +8,11 @@ Thumbs.db
 # Node and web output
 node_modules/
 dist/
+.pnpm-store/
+coverage/
+test-results/
+playwright-report/
+blob-report/
 
 # Rust and Tauri generated output
 src-tauri/gen/
@@ -20,3 +25,9 @@ release/portable/
 *.tar
 screenshots/
 .playwright-mcp/
+
+# Local environment and diagnostic output
+.env
+.env.*
+!.env.example
+*.log

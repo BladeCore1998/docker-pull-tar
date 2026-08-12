@@ -213,11 +213,38 @@ const commandErrorMessage = (error: unknown, fallback: string): string => {
 
 <style scoped>
 .home-page {
-  padding: 20px;
+  height: 100%;
+  min-height: 0;
+  box-sizing: border-box;
+  padding: 16px;
   max-width: 960px;
   margin: 0 auto;
+  overflow: hidden;
 }
 .download-card {
-  height: 92%;
+  height: 100%;
+  box-sizing: border-box;
+}
+:deep(.download-card .el-card__body) {
+  height: 100%;
+  min-height: 0;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+:deep(.download-card form) {
+  flex: 0 0 auto;
+}
+:deep(.download-card .download-progress) {
+  flex: 0 1 auto;
+  min-height: 0;
+  max-height: min(30vh, 230px);
+  overflow: hidden;
+}
+:deep(.download-card .log-console) {
+  flex: 1 1 160px;
+  min-height: 120px;
+  overflow: hidden;
 }
 </style>
