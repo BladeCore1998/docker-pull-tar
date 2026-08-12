@@ -1,29 +1,22 @@
-test.py
-.*
-!.gitignore
+# Local worktrees and editor metadata
+.worktrees/
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
 
-# 打包产物
-dist/
-build/
-frontend/dist/
-frontend/dist-electron/
-*.zip
-*.tar
-
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-.Python
-*.egg-info/
-
-# Node
+# Node and web output
 node_modules/
-pnpm-lock.yaml
+dist/
 
-# Screenshots and images
+# Rust and Tauri generated output
+src-tauri/gen/
+src-tauri/target/
+
+# Portable release output
+release/portable/
+
+# User-created image archives and screenshots
+*.tar
 screenshots/
-*.jpg
-*.jpeg
-*.png
-*.gif
+.playwright-mcp/

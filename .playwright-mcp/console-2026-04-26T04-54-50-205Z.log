@@ -1,0 +1,6 @@
+[     775ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5173/favicon.ico:0
+[     876ms] [LOG] Home page mounted, loading settings... @ http://localhost:5173/src/views/Home.vue:24
+[     902ms] [LOG] Settings loaded: Proxy(Object) @ http://localhost:5173/src/stores/settings.ts:23
+[     902ms] [LOG] Mirrors loaded: 5 @ http://localhost:5173/src/stores/settings.ts:24
+[     908ms] [LOG] Settings loaded: Proxy(Object) @ http://localhost:5173/src/views/Home.vue:30
+[     917ms] [LOG] WebSocket connected @ http://localhost:5173/src/stores/download.ts:122

@@ -1,0 +1,67 @@
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]: 🚀
+      - generic [ref=e7]: Docker 镜像下载工具
+    - menubar [ref=e8]:
+      - menuitem "下载" [ref=e9] [cursor=pointer]
+      - menuitem "历史" [ref=e10] [cursor=pointer]
+      - menuitem [ref=e11]:
+        - img [ref=e14] [cursor=pointer]
+  - main [ref=e16]:
+    - generic [ref=e19]:
+      - generic [ref=e20]:
+        - generic [ref=e21]:
+          - generic [ref=e22]: 镜像包名
+          - generic [ref=e24]:
+            - textbox "镜像包名" [disabled] [ref=e26]:
+              - /placeholder: "例如: nginx, nginx:latest, alpine:3.18"
+              - text: nginx:latest
+            - button "解析" [disabled] [ref=e28]:
+              - generic [ref=e29]: 解析
+        - generic [ref=e30]:
+          - generic [ref=e31]: 镜像源
+          - generic [ref=e34] [cursor=pointer]:
+            - generic:
+              - combobox "镜像源" [ref=e36]
+              - generic [ref=e37]: 1ms.run
+            - img [ref=e40]
+        - generic [ref=e42]:
+          - generic [ref=e43]: 架构
+          - generic [ref=e46]:
+            - generic:
+              - combobox "架构" [disabled] [ref=e48]
+              - generic [ref=e49]: amd64 (x86_64)
+            - generic:
+              - generic:
+                - img
+        - generic [ref=e54]:
+          - generic [ref=e55]: 输出目录
+          - generic [ref=e57]:
+            - textbox "输出目录" [disabled] [ref=e59]: F:\docker-pull-tar-downloads
+            - button "选择" [disabled] [ref=e61]:
+              - generic [ref=e62]: 选择
+        - generic [ref=e64]:
+          - button "下载中..." [disabled]:
+            - generic:
+              - img
+            - generic: 下载中...
+          - button "取消" [active] [ref=e67] [cursor=pointer]:
+            - generic [ref=e68]: 取消
+      - alert [ref=e77]:
+        - generic [ref=e79]: "完整镜像地址: docker.1ms.run/library/nginx:latest"
+      - generic [ref=e92]:
+        - generic [ref=e93]:
+          - generic [ref=e94]: 📋 控制台日志
+          - button "清空日志" [ref=e95] [cursor=pointer]:
+            - generic [ref=e96]: 清空日志
+        - generic [ref=e97]:
+          - generic [ref=e98]: 13:05:45开始下载 library/nginx:latest
+          - generic [ref=e99]: "13:05:45镜像源: docker.1ms.run"
+          - generic [ref=e100]: "13:05:45架构: amd64"
+          - generic [ref=e101]: 13:08:53连接断开，正在重连 (1/5)...
+          - generic [ref=e102]: 13:08:58实时日志连接错误
+          - generic [ref=e103]: 13:08:58连接断开，正在重连 (2/5)...
+          - generic [ref=e104]: 13:09:02实时日志连接错误
+          - generic [ref=e105]: 13:09:02连接断开，正在重连 (3/5)...
+          - generic [ref=e106]: 13:09:05实时日志连接已建立

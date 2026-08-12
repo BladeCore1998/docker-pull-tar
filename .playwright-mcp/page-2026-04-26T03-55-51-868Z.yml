@@ -1,0 +1,53 @@
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]: 🚀
+      - generic [ref=e7]: Docker 镜像下载工具
+    - menubar [ref=e8]:
+      - menuitem "下载" [ref=e9] [cursor=pointer]
+      - menuitem "历史" [ref=e10] [cursor=pointer]
+      - menuitem [ref=e11]:
+        - img [ref=e14] [cursor=pointer]
+  - main [ref=e16]:
+    - generic [ref=e200]:
+      - generic [ref=e201]:
+        - generic [ref=e202]:
+          - generic [ref=e203]: 镜像包名
+          - generic [ref=e205]:
+            - textbox "镜像包名" [ref=e207]:
+              - /placeholder: "例如: nginx, nginx:latest, alpine:3.18"
+            - button "解析" [ref=e209] [cursor=pointer]:
+              - generic [ref=e210]: 解析
+        - generic [ref=e211]:
+          - generic [ref=e212]: 镜像源
+          - generic [ref=e215] [cursor=pointer]:
+            - generic:
+              - combobox "镜像源" [ref=e217]
+              - generic [ref=e218]: 1ms.run
+            - img [ref=e221]
+        - generic [ref=e223]:
+          - generic [ref=e224]: 架构
+          - generic [ref=e227] [cursor=pointer]:
+            - generic:
+              - combobox "架构" [ref=e229]
+              - generic [ref=e230]: amd64 (x86_64)
+            - img [ref=e233]
+        - generic [ref=e235]:
+          - generic [ref=e236]: 输出目录
+          - generic [ref=e238]:
+            - textbox "输出目录" [ref=e240]: F:\docker-pull-tar-downloads
+            - button "选择" [ref=e242] [cursor=pointer]:
+              - generic [ref=e243]: 选择
+        - generic [ref=e245]:
+          - button "开始下载" [disabled] [ref=e246]:
+            - generic [ref=e247]: 开始下载
+          - button "取消" [disabled] [ref=e248]:
+            - generic [ref=e249]: 取消
+      - generic [ref=e250]:
+        - generic [ref=e251]:
+          - generic [ref=e252]: 📋 控制台日志
+          - button "清空日志" [ref=e253] [cursor=pointer]:
+            - generic [ref=e254]: 清空日志
+        - generic [ref=e255]:
+          - generic [ref=e256]: 11:55:36实时日志连接已建立
+          - generic [ref=e257]: 11:55:43实时日志连接已建立

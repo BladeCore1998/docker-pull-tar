@@ -1,149 +1,127 @@
 # Docker Pull Tar
 
-Docker 镜像下载工具 - 无需 Docker 环境直接下载镜像为 tar 包
+Docker Pull Tar 是一个面向 Windows 10/11 的免安装桌面客户端。它无需本机 Docker 环境，即可从 Docker/OCI Registry 下载指定平台的镜像并导出为可由 `docker load` 导入的 tar 文件。
 
-## 项目简介
+## 当前架构
 
-Docker Pull Tar 是一个桌面应用，用于从 Docker 仓库下载镜像并打包为 `.tar` 文件，方便在内网环境中导入使用。
+- `src/`：Vue 3 + TypeScript 界面、Pinia 状态和 Tauri 调用封装。
+- `src-tauri/`：Tauri 2 桌面壳及 Rust 核心。
+- `src/api/tauri.ts`：唯一的界面/Rust 通信 seam，集中封装 commands 与 events。
+- Rust 模块负责 Registry 鉴权、清单解析、分层下载、断点续传、摘要校验、归档、设置与历史。
+- Registry 密码保存在 Windows Credential Manager，不写入配置 JSON。
 
-**技术栈：**
-- 前端：Vue 3 + Electron + Element Plus + Vite + TypeScript
-- 后端：FastAPI + Python + uvicorn
+应用不会启动 Python 后端、Electron 进程、localhost API 或 WebSocket bridge，也不会执行任意 shell 命令作为界面与 Rust 的通信方式。
 
-## 特性
+```text
+Vue views / Pinia stores
+          |
+          v
+src/api/tauri.ts (typed invoke + events)
+          |
+          v
+Rust commands -> task_manager -> registry / blob / archive
+                          |
+                          +----> storage / credentials / history
+```
 
-- **图形化界面** - 桌面应用，无需命令行操作
-- **多镜像源支持** - Docker Hub、1ms.run、DaoCloud 等镜像站
-- **私有仓库支持** - 支持带认证的私有仓库
-- **多架构选择** - amd64、arm64、armv7 等架构
-- **断点续传** - 下载中断后可继续
-- **实时日志** - WebSocket 实时显示下载进度
-- **历史记录** - 记录下载历史，方便查看
+## 主要功能
 
-## 安装
+- 新增、编辑、删除和设置默认镜像源。
+- 为每个私有 Registry 保存独立认证信息。
+- 支持 amd64、arm64 和 arm/v7。
+- 支持流式并发下载、协作式取消、断点续传和 SHA-256 校验。
+- 生成 Docker 兼容归档，并记录成功、失败与取消历史。
+- 使用带 revision 的恢复快照保护设置与历史一致性。
 
-### 下载客户端
+## 环境要求
 
-前往 [Releases](https://github.com/topcss/docker-pull-tar/releases) 下载打包好的客户端，解压后直接运行 `DockerPull.exe`。
+- Windows 10/11 x64。
+- Microsoft Edge WebView2 Runtime。
+- Node.js 20+ 与 pnpm 9。
+- Rust stable，包含 `x86_64-pc-windows-msvc` target。
+- Visual Studio 2022 Build Tools，包含 Desktop development with C++ 和 Windows SDK。
 
-### 从源码打包
+运行已经构建的 `DockerPull.exe` 不需要 Node.js、Rust、Python 或 Docker。
 
-**环境要求：**
-- Node.js 18+ & pnpm
-- Python 3.10+ & PyInstaller
+## 开发启动
 
-```bash
-# 1. 克隆项目
-git clone https://github.com/topcss/docker-pull-tar.git
-cd docker-pull-tar
+所有命令都在仓库根目录执行：
 
-# 2. 安装前端依赖
+```powershell
 pnpm install
-
-# 3. 安装后端依赖
-pip install -r backend/requirements.txt
-pip install pyinstaller
-
-# 4. 打包后端
-pyinstaller backend.spec --noconfirm
-
-# 5. 打包前端（完整打包）
-npm run build
-
-# 6. 运行客户端
-npm run start
+pnpm dev
 ```
 
-### 开发模式
+`pnpm dev` 启动 Vite 热更新和 Tauri 桌面窗口，不需要单独启动后端进程。
 
-```bash
-# 安装依赖
-pnpm install
+## 常用命令
 
-# 开发模式运行（热更新）
-npm run dev
+| 命令 | 用途 |
+| --- | --- |
+| `pnpm dev` | 启动 Tauri 开发客户端 |
+| `pnpm dev:web` | 仅启动 Vite 开发页面 |
+| `pnpm test` | 运行界面测试 |
+| `pnpm typecheck` | 检查 Vue/TypeScript 类型 |
+| `pnpm build:web` | 构建 Vue 静态资源 |
+| `pnpm build:tauri` | 构建当前平台的 Tauri release |
+| `pnpm build:portable` | 构建 Windows x64 免安装版 |
+
+Rust 模块维护命令：
+
+```powershell
+cargo fmt --manifest-path src-tauri/Cargo.toml --all
+cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
+cargo test --manifest-path src-tauri/Cargo.toml --all-targets
 ```
 
-#### Python 后端启动配置
+## 便携版
 
-开发模式通过 `startup.config.json` 配置 Python 后端启动方式：
-
-```json
-{
-  "startupMode": "conda",
-  "condaEnv": "docker-pull-tar",
-  "port": 8000
-}
+```powershell
+pnpm build:portable
 ```
 
-**启动模式：**
+脚本先扫描运行时代码中的旧架构引用，然后构建 `x86_64-pc-windows-msvc` release，并输出：
 
-| 模式 | 说明 |
-|------|------|
-| `none` | 不自动启动，需手动运行 `python backend/main.py` |
-| `python` | 使用系统 Python 启动 |
-| `conda` | 使用 conda 环境（指定 `condaEnv` 环境名） |
-| `exe` | 运行打包后的 backend.exe（打包模式自动使用） |
-
-**常见配置示例：**
-
-```
-{ "startupMode": "none" }
-
-// 系统 Python
-{ "startupMode": "python" }
-
-// Conda 环境
-{ "startupMode": "conda", "condaEnv": "your-env-name" }
-
-// 指定 Python 路径
-{ "startupMode": "python", "pythonPath": "C:/Python310/python.exe" }
+```text
+release/portable/DockerPull.exe
 ```
 
-打包后的应用自动使用 `exe` 模式，无需配置。
+脚本同时打印文件大小和 SHA-256。便携程序依赖 Windows WebView2 Runtime；用户配置保存在 Windows 标准应用配置目录，凭据由 Windows Credential Manager 管理。
 
-## 使用方法
+## 使用
 
-### 基本操作
+1. 输入镜像名称，例如 `nginx:latest` 或 `registry.example.com/team/app:v2`。
+2. 选择镜像源、目标架构和输出目录。
+3. 开始下载，等待下载、校验和打包完成。
+4. 在目标环境执行 `docker load -i .\image.tar`。
 
-1. 输入镜像名称（如 `nginx:latest`）
-2. 选择镜像源（默认 1ms.run）
-3. 选择架构（默认 amd64）
-4. 选择输出目录
-5. 点击开始下载
+## 目录结构
 
-### 导入镜像
-
-下载完成后，在内网机器上导入：
-
-```bash
-docker load -i xxx.tar
-```
-
-## 开发命令
-
-| 命令 | 说明 |
-|------|------|
-| `npm run dev` | 开发模式启动（热更新） |
-| `npm run build` | 打包客户端 |
-| `npm run start` | 运行打包后的客户端 |
-
-## 项目结构
-
-```
+```text
 docker-pull-tar/
-├── backend/           # Python FastAPI 后端
-│   ├── main.py        # 入口文件
-│   ├── routers/       # API 路由
-│   └── services/      # 业务逻辑
-│   └── requirements.txt # Python 依赖
-├── backend.spec       # PyInstaller 打包配置
-├── dist/              # PyInstaller 输出（backend.exe）
-├── frontend/          # Vue 3 + Electron 前端
-│   ├── src/           # Vue 源码
-│   └── electron/      # Electron 主进程
-│   └ electron-builder.json # Electron 打包配置
-├── package.json       # 项目配置
-├── startup.config.json # Python 后端启动配置（开发模式）
-└── README.md
+|-- src/                     # Vue 界面、状态与 Tauri 调用封装
+|-- src-tauri/
+|   |-- src/                 # Rust commands 和领域模块
+|   |-- tests/               # Rust 集成测试
+|   |-- capabilities/        # Tauri 最小权限配置
+|   `-- tauri.conf.json
+|-- resources/               # Windows 应用图标
+|-- scripts/
+|   `-- build-portable.ps1
+|-- docs/superpowers/        # 架构设计与迁移历史
+|-- CONTEXT.md               # 领域统一语言
+|-- AGENTS.md                # AI 代理约束
+|-- index.html
+|-- vite.config.mts
+|-- tsconfig.json
+`-- package.json
 ```
+
+详细设计见：
+
+- `docs/superpowers/specs/2026-07-12-tauri-rust-windows-client-design.md`
+- `docs/superpowers/specs/2026-07-18-config-revision-recovery-design.md`
+
+## AI 协作约束
+
+所有 AI 代理必须遵守根目录 `AGENTS.md`。未经用户明确、直接许可，严禁执行 Git 提交或推送。

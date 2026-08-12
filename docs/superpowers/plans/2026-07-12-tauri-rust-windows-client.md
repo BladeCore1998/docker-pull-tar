@@ -372,7 +372,9 @@ Create tiny deterministic config, gzip layer, and uncompressed layer fixtures. A
 
 - [ ] **Step 2: Verify failure**
 
-Run: `cargo test --manifest-path frontend/src-tauri/Cargo.toml archive`
+Run: `cargo test --manifest-path frontend/src-tauri/Cargo.toml --test archive`
+
+Run: `cargo test --manifest-path frontend/src-tauri/Cargo.toml --lib`
 
 Expected: archive builder is missing.
 
@@ -382,7 +384,11 @@ Use `flate2::read::GzDecoder` only for gzip media types and direct copy for unco
 
 - [ ] **Step 4: Run archive tests**
 
-Run: `cargo test --manifest-path frontend/src-tauri/Cargo.toml archive -- --nocapture`
+Run: `cargo test --manifest-path frontend/src-tauri/Cargo.toml --test archive -- --nocapture`
+
+Run: `cargo test --manifest-path frontend/src-tauri/Cargo.toml --lib -- --nocapture`
+
+Run: `cargo test --manifest-path frontend/src-tauri/Cargo.toml`
 
 Expected: all content, path safety, media type, cancellation, and collision tests pass.
 
@@ -437,6 +443,9 @@ Expected: all concurrency, transition, cancellation, event, and history tests pa
 git add frontend/src-tauri/src/domain.rs frontend/src-tauri/src/events.rs frontend/src-tauri/src/task_manager.rs frontend/src-tauri/src/storage.rs
 git commit -m "feat: manage downloads with one state machine"
 ```
+
+> Storage recovery prerequisite: execute and verify
+> `docs/superpowers/plans/2026-07-18-config-revision-recovery.md` before Task 8.
 
 ## Task 8: Expose Tauri Commands and Minimal Windows Capabilities
 
@@ -623,6 +632,7 @@ git commit -m "feat: switch download UI to Tauri events"
 - Modify: `package.json`
 - Modify: `pnpm-lock.yaml`
 - Modify: `.gitignore`
+- Modify: `frontend/src-tauri/Cargo.toml`
 - Modify: `README.md`
 - Create: `scripts/build-portable.ps1`
 
@@ -645,7 +655,7 @@ Remove Electron, electron-builder, Axios, concurrently, cross-env, wait-on, Pyth
 
 - [ ] **Step 3: Complete the portable build script**
 
-After preflight, run frontend tests/typecheck, Rust fmt/clippy/tests, then `pnpm --filter frontend tauri build --no-bundle`. Copy `frontend/src-tauri/target/release/docker-pull-tar.exe` to `release/portable/DockerPull.exe`. Print executable byte size and SHA-256 using `Get-FileHash`.
+After preflight, define `[profile.release]` with `panic = "unwind"` (required so task-boundary panics converge to `failed`; never use the abort strategy), then run frontend tests/typecheck, Rust fmt/clippy/tests, and `pnpm --filter frontend tauri build --no-bundle`. Copy `frontend/src-tauri/target/release/docker-pull-tar.exe` to `release/portable/DockerPull.exe`. Print executable byte size and SHA-256 using `Get-FileHash`.
 
 - [ ] **Step 4: Update documentation**
 

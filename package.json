@@ -1,12 +1,35 @@
 {
   "name": "docker-pull-tar",
   "version": "2.0.0",
+  "description": "基于 Tauri 2 的免 Docker 镜像下载客户端",
+  "author": "blade_li",
   "private": true,
-  "description": "Docker 镜像下载",
+  "packageManager": "pnpm@9.15.9",
   "scripts": {
-    "dev": "pnpm --filter frontend electron:dev",
-    "start": "node -e \"require('child_process').spawn('./frontend/dist-electron/DockerPull 2.0.0.exe', [], {stdio:'inherit'})\"",
-    "build:backend": "pyinstaller backend.spec --noconfirm",
-    "build": "pnpm run build:backend && pnpm --filter frontend electron:build"
+    "dev": "tauri dev",
+    "dev:web": "vite",
+    "build": "tauri build",
+    "build:web": "vite build",
+    "build:tauri": "tauri build",
+    "build:portable": "powershell -ExecutionPolicy Bypass -File scripts/build-portable.ps1",
+    "test": "vitest run --passWithNoTests",
+    "typecheck": "vue-tsc --noEmit",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.0.0",
+    "element-plus": "^2.5.0",
+    "pinia": "^2.1.0",
+    "vue": "^3.4.0",
+    "vue-router": "^4.3.0"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.0.0",
+    "@types/node": "^25.6.0",
+    "@vitejs/plugin-vue": "^5.0.0",
+    "typescript": "^6.0.3",
+    "vite": "^5.0.0",
+    "vitest": "^2.1.9",
+    "vue-tsc": "^3.2.7"
   }
 }

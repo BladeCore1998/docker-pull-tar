@@ -1,0 +1,56 @@
+[    5771ms] [WARNING] Invalid prop: custom validator check failed for prop "percentage". null at <ElProgress>
+at <DownloadProgress>
+at <ElCard>
+at <Home>
+at <RouterView>
+at <ElMain>
+at <ElContainer>
+at <App> [Object, Object, Object, Object, Object, Object, Object, Object] @ http://localhost:5180/node_modules/.vite/deps/element-plus.js?v=980b8300:29166
+[    5772ms] [WARNING] Invalid prop: custom validator check failed for prop "percentage". null at <ElProgress>
+at <DownloadProgress>
+at <ElCard>
+at <Home>
+at <RouterView>
+at <ElMain>
+at <ElContainer>
+at <App> [Object, Object, Object, Object, Object, Object, Object, Object] @ http://localhost:5180/node_modules/.vite/deps/element-plus.js?v=980b8300:29166
+[    5773ms] [WARNING] Invalid prop: custom validator check failed for prop "percentage". null at <ElProgress>
+at <DownloadProgress>
+at <ElCard>
+at <Home>
+at <RouterView>
+at <ElMain>
+at <ElContainer>
+at <App> [Object, Object, Object, Object, Object, Object, Object, Object] @ http://localhost:5180/node_modules/.vite/deps/element-plus.js?v=980b8300:29166
+[    5774ms] [WARNING] Invalid prop: custom validator check failed for prop "percentage". null at <ElProgress>
+at <DownloadProgress>
+at <ElCard>
+at <Home>
+at <RouterView>
+at <ElMain>
+at <ElContainer>
+at <App> [Object, Object, Object, Object, Object, Object, Object, Object] @ http://localhost:5180/node_modules/.vite/deps/element-plus.js?v=980b8300:29166
+[    5775ms] [WARNING] Invalid prop: custom validator check failed for prop "percentage". null at <ElProgress>
+at <DownloadProgress>
+at <ElCard>
+at <Home>
+at <RouterView>
+at <ElMain>
+at <ElContainer>
+at <App> [Object, Object, Object, Object, Object, Object, Object, Object] @ http://localhost:5180/node_modules/.vite/deps/element-plus.js?v=980b8300:29166
+[    5776ms] [WARNING] Invalid prop: custom validator check failed for prop "percentage". null at <ElProgress>
+at <DownloadProgress>
+at <ElCard>
+at <Home>
+at <RouterView>
+at <ElMain>
+at <ElContainer>
+at <App> [Object, Object, Object, Object, Object, Object, Object, Object] @ http://localhost:5180/node_modules/.vite/deps/element-plus.js?v=980b8300:29166
+[    5779ms] [WARNING] Invalid prop: custom validator check failed for prop "percentage". null at <ElProgress>
+at <DownloadProgress>
+at <ElCard>
+at <Home>
+at <RouterView>
+at <ElMain>
+at <ElContainer>
+at <App> [Object, Object, Object, Object, Object, Object, Object, Object] @ http://localhost:5180/node_modules/.vite/deps/element-plus.js?v=980b8300:29166

@@ -1,0 +1,75 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e6]: 🚀
+        - generic [ref=e7]: Docker 镜像下载工具
+      - menubar [ref=e8]:
+        - menuitem "下载" [ref=e9] [cursor=pointer]
+        - menuitem "历史" [ref=e10] [cursor=pointer]
+        - menuitem [ref=e11]:
+          - img [ref=e14] [cursor=pointer]
+    - main [ref=e16]:
+      - generic [ref=e19]:
+        - generic [ref=e20]:
+          - generic [ref=e21]:
+            - generic [ref=e22]: 镜像包名
+            - generic [ref=e24]:
+              - textbox "镜像包名" [disabled] [ref=e26]:
+                - /placeholder: "例如: nginx, nginx:latest, alpine:3.18"
+                - text: alpine:latest
+              - button "解析" [disabled] [ref=e28]:
+                - generic [ref=e29]: 解析
+          - generic [ref=e30]:
+            - generic [ref=e31]: 镜像源
+            - generic [ref=e34] [cursor=pointer]:
+              - generic:
+                - combobox "镜像源" [ref=e36]
+                - generic [ref=e37]: 1ms.run
+              - img [ref=e40]
+          - generic [ref=e42]:
+            - generic [ref=e43]: 架构
+            - generic [ref=e46]:
+              - generic:
+                - combobox "架构" [disabled] [ref=e48]
+                - generic [ref=e49]: amd64 (x86_64)
+              - generic:
+                - generic:
+                  - img
+          - generic [ref=e54]:
+            - generic [ref=e55]: 输出目录
+            - generic [ref=e57]:
+              - textbox "输出目录" [disabled] [ref=e59]: F:\docker-pull-tar-downloads
+              - button "选择" [disabled] [ref=e61]:
+                - generic [ref=e62]: 选择
+          - generic [ref=e64]:
+            - button "下载中..." [disabled]:
+              - generic:
+                - img
+              - generic: 下载中...
+            - button "取消" [ref=e67] [cursor=pointer]:
+              - generic [ref=e68]: 取消
+        - alert [ref=e100]:
+          - generic [ref=e102]: "完整镜像地址: docker.1ms.run/library/alpine:latest"
+        - generic [ref=e69]:
+          - generic [ref=e70]:
+            - generic [ref=e71]: 📋 控制台日志
+            - button "清空日志" [ref=e72] [cursor=pointer]:
+              - generic [ref=e73]: 清空日志
+          - generic [ref=e74]:
+            - generic [ref=e103]: 13:36:29开始下载 library/alpine:latest
+            - generic [ref=e104]: "13:36:29镜像源: docker.1ms.run"
+            - generic [ref=e105]: "13:36:29架构: amd64"
+            - generic [ref=e106]: 13:36:29🚀 开始下载 library/alpine:latest
+            - generic [ref=e107]: "13:36:29📦 镜像源: docker.1ms.run"
+            - generic [ref=e108]: "13:36:29📦 架构: amd64"
+            - generic [ref=e109]: "13:36:29📁 输出目录: F:\\docker-pull-tar-downloads\\library_alpine_latest_amd64"
+            - generic [ref=e110]: "13:36:30找到架构 amd64 的 manifest: sha256:4d889c14e7d5a..."
+            - generic [ref=e111]: 13:36:30📦 共 1 个层需要下载
+            - generic [ref=e112]: "13:36:30📦 镜像总大小: 3.7MB"
+            - generic [ref=e113]: "13:36:30📊 进度: 1/1 层 | 0% | 速度: 0B/s"
+            - generic [ref=e114]: "13:36:30⬇️ 下载 Layer 1/1: sha256:6a0ac (3.7MB)"
+            - generic [ref=e115]: "13:36:31📊 进度: 1/1 层 | 0% | 速度: 0B/s"
+  - alert [ref=e116]:
+    - img [ref=e118]
+    - paragraph [ref=e120]: 开始下载

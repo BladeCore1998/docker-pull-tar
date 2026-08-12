@@ -1,0 +1,6 @@
+[     125ms] [LOG] Settings page mounted, loading settings... @ http://localhost:5173/src/views/Settings.vue:26
+[     159ms] [LOG] WebSocket closed @ http://localhost:5173/src/stores/download.ts:193
+[     160ms] [LOG] Settings loaded: Proxy(Object) @ http://localhost:5173/src/stores/settings.ts:23
+[     161ms] [LOG] Mirrors loaded: 5 @ http://localhost:5173/src/stores/settings.ts:24
+[     161ms] [LOG] Settings loaded successfully: Proxy(Object) @ http://localhost:5173/src/views/Settings.vue:31
+[     161ms] [LOG] Mirrors loaded successfully: 5 @ http://localhost:5173/src/views/Settings.vue:32

@@ -184,15 +184,13 @@ HTTP 客户端使用 `reqwest` + Rustls，默认启用系统可信证书校验�
 
 #### `storage`
 
-进程内只存在一个共享实例，使用异步读写锁保护内存数据。更新流程为：
+进程内只存在一个共享实例，使用异步读写锁保护内存数据，并由事务互斥锁串行化所有配置 revision。配置采用 `config.json` 与 `config.json.recovery` 双快照协议；每个已提交快照包含单调递增 `revision` 和唯一 `transactionId`。完整恢复快照写入、flush、`sync_all`、原子替换 recovery 路径，并完成替换后的目录持久化屏障（Windows 使用 write-through 替换语义）后才达到提交点；主文件提升失败不得回滚已提交状态，也不得提前消耗唯一 recovery 副本。
 
-1. 对命令负载做字段级验证。
-2. 在锁内合并到当前配置。
-3. 写入同目录临时文件并 flush。
-4. 使用原子替换提交 `config.json`。
-5. 更新内存版本并返回完整快照。
+启动时独立验证主文件和恢复文件，选择 revision 更高的有效快照。相同 revision 但 transaction 或内容冲突时返回 `CONFIG_CORRUPTED`，不得按文件时间或路径优先级猜测。旧 `version=1.0` 与当前 `version=2.0` 配置迁移到 version 3.0，并保留合法设置、镜像源、凭据引用、待清理凭据和历史。
 
-启动时读取现有 `version=1.0` 配置并迁移到新版本；未知字段忽略，合法设置、镜像源和历史保留。解析失败时将损坏文件改名为带时间戳的备份，再创建默认配置，同时向 UI 返回恢复提示。
+旧凭据删除采用 pending-first 顺序：移除活动引用的同一 revision 必须先把旧引用写入 `pendingCredentialCleanup`，随后才执行幂等删除；确认删除后再提交清除 pending 的 revision。密码始终只存放于 Windows Credential Manager。
+
+完整提交、启动选择、迁移、错误和故障注入矩阵见 [Revisioned Config Recovery Design](./2026-07-18-config-revision-recovery-design.md)。
 
 ### 5.2 依赖方向
 
@@ -425,7 +423,7 @@ idle -> preparing -> downloading -> verifying -> packing -> completed
 
 Tauri 配置目标为 Windows x64。正式构建使用 release profile：
 
-- `panic = "abort"`
+- `panic = "unwind"`，这是任务边界捕获 panic 并收敛到 `failed` 的必要条件；不得使用 abort 策略
 - `lto = true`
 - `codegen-units = 1`
 - `strip = true`

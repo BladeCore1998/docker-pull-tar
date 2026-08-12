@@ -1,0 +1,10 @@
+[   26508ms] [ERROR] Failed to load settings: AxiosError: timeout of 30000ms exceeded
+    at XMLHttpRequest.handleTimeout (http://localhost:5173/node_modules/.vite/deps/axios.js?v=980b8300:1789:9)
+    at Axios.request (http://localhost:5173/node_modules/.vite/deps/axios.js?v=980b8300:2398:41)
+    at async Promise.all (index 0)
+    at async Proxy.loadSettings (http://localhost:5173/src/stores/settings.ts:18:43)
+    at async http://localhost:5173/src/views/Home.vue?t=1777180282318:27:9 @ http://localhost:5173/src/stores/settings.ts:26
+[   26510ms] [LOG] Settings loaded: Proxy(Object) @ http://localhost:5173/src/views/Home.vue?t=1777180282318:30
+[   27428ms] [LOG] WebSocket closed @ http://localhost:5173/src/stores/download.ts:193
+[   27441ms] [LOG] WebSocket connected @ http://localhost:5173/src/stores/download.ts:122
+[   29443ms] [LOG] WebSocket connected @ http://localhost:5173/src/stores/download.ts:122

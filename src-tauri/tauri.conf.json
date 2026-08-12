@@ -1,0 +1,30 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Docker Pull Tar",
+  "version": "2.0.0",
+  "identifier": "com.lishangguo.docker-pull-tar",
+  "build": {
+    "beforeDevCommand": "pnpm dev:web",
+    "beforeBuildCommand": "pnpm build:web",
+    "devUrl": "http://localhost:5173",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "security": {
+      "csp": "default-src 'self'; img-src 'self' asset: data:; style-src 'self' 'unsafe-inline'"
+    },
+    "windows": [
+      {
+        "label": "main",
+        "title": "Docker Pull Tar",
+        "width": 1000,
+        "height": 700,
+        "resizable": false
+      }
+    ]
+  },
+  "bundle": {
+    "active": false,
+    "icon": ["../resources/icon.ico"]
+  }
+}

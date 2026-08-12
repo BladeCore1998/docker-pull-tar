@@ -1,0 +1,56 @@
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]: 🚀
+      - generic [ref=e7]: Docker 镜像下载工具
+    - menubar [ref=e8]:
+      - menuitem "下载" [ref=e9] [cursor=pointer]
+      - menuitem "历史" [ref=e10] [cursor=pointer]
+      - menuitem [ref=e11]:
+        - img [ref=e14] [cursor=pointer]
+  - main [ref=e16]:
+    - generic [ref=e76]:
+      - generic [ref=e77]:
+        - generic [ref=e78]: 基本设置
+        - generic [ref=e80]:
+          - generic [ref=e81]:
+            - generic [ref=e82]: 默认输出目录
+            - generic [ref=e84]:
+              - textbox "默认输出目录" [ref=e86]
+              - button "选择" [ref=e88] [cursor=pointer]:
+                - generic [ref=e89]: 选择
+          - generic [ref=e90]:
+            - generic [ref=e91]: 默认架构
+            - generic [ref=e94] [cursor=pointer]:
+              - generic:
+                - combobox "默认架构" [ref=e96]
+                - generic [ref=e97]: amd64
+              - img [ref=e100]
+          - generic [ref=e102]:
+            - generic [ref=e103]: 下载线程数
+            - slider "下载线程数" [ref=e108] [cursor=pointer]
+          - button "保存设置" [ref=e123] [cursor=pointer]:
+            - generic [ref=e124]: 保存设置
+      - generic [ref=e125]:
+        - generic [ref=e127]:
+          - generic [ref=e128]: 镜像源管理
+          - button "添加镜像源" [ref=e129] [cursor=pointer]:
+            - generic [ref=e130]: 添加镜像源
+        - generic [ref=e133]:
+          - table [ref=e135]:
+            - rowgroup [ref=e142]:
+              - row "名称 地址 认证 默认 操作" [ref=e143]:
+                - columnheader "名称" [ref=e144]:
+                  - generic [ref=e145]: 名称
+                - columnheader "地址" [ref=e146]:
+                  - generic [ref=e147]: 地址
+                - columnheader "认证" [ref=e148]:
+                  - generic [ref=e149]: 认证
+                - columnheader "默认" [ref=e150]:
+                  - generic [ref=e151]: 默认
+                - columnheader "操作" [ref=e152]:
+                  - generic [ref=e153]: 操作
+          - generic [ref=e157]:
+            - table:
+              - rowgroup
+            - generic [ref=e159]: No Data
