@@ -1,28 +1,21 @@
 <template>
   <div class="download-progress" v-if="status !== 'idle'">
     <div class="progress-header">
-      <span class="progress-title">下载进度</span>
+      <span class="progress-title">&#x4e0b;&#x8f7d;&#x8fdb;&#x5ea6;</span>
       <span class="progress-status">{{ statusText }}</span>
     </div>
-    <div class="progress-layers">
-      <div v-for="layer in layers" :key="layer.digest" class="layer-item">
-        <div class="layer-header">
-          <span class="layer-status-icon">{{ layerStatusText(layer.status) }}</span>
-          <span class="layer-name">{{ layer.digest.substring(0, 12) }}</span>
-        </div>
-        <el-progress
-          :percentage="getPercentage(layer)"
-          :status="layer.status === 'completed' ? 'success' : ''"
-          :stroke-width="10"
-        />
-        <div class="layer-info">
-          <span>{{ formatSize(layer.downloaded) }}/{{ formatSize(layer.total) }}</span>
-        </div>
+    <div class="overall-progress">
+      <el-progress
+        :percentage="overallPercentage"
+        :status="status === 'completed' ? 'success' : ''"
+        :stroke-width="12"
+      />
+      <div class="overall-details">
+        <span>{{ overallSizeText }}</span>
+        <span>{{ speedText }}</span>
+        <span>{{ etaDisplayText }}</span>
+        <span>{{ layersText }}</span>
       </div>
-    </div>
-    <div class="progress-summary">
-      <span>速度: {{ formatSpeed(speed) }}</span>
-      <span>总计: {{ currentLayer }}/{{ totalLayers }} 层</span>
     </div>
   </div>
 </template>
@@ -31,34 +24,51 @@
 import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useDownloadStore } from '@/stores/download'
-import type { DownloadStatus, LayerProgress, LayerStatus } from '@/types/api'
+import type { DownloadStatus } from '@/types/api'
 
 const downloadStore = useDownloadStore()
 const { status, progress } = storeToRefs(downloadStore)
 
 const statusText = computed<string>(() => {
   const texts: Record<DownloadStatus, string> = {
-    idle: '空闲',
-    preparing: '准备中',
-    downloading: '下载中',
-    verifying: '校验中',
-    packing: '打包中',
-    completed: '已完成',
-    failed: '失败',
-    cancelled: '已取消'
+    idle: '\u7a7a\u95f2',
+    preparing: '\u51c6\u5907\u4e2d',
+    downloading: '\u4e0b\u8f7d\u4e2d',
+    verifying: '\u6821\u9a8c\u4e2d',
+    packing: '\u6253\u5305\u4e2d',
+    completed: '\u5df2\u5b8c\u6210',
+    failed: '\u5931\u8d25',
+    cancelled: '\u5df2\u53d6\u6d88'
   }
-  return texts[status.value] || '未知'
+  return texts[status.value]
 })
 
-const layers = computed<LayerProgress[]>(() => progress.value.layers || [])
 const currentLayer = computed<number>(() => progress.value.currentLayer || 0)
 const totalLayers = computed<number>(() => progress.value.totalLayers || 0)
 const speed = computed<number>(() => progress.value.speed || 0)
+const downloadedBytes = computed<number>(() => progress.value.downloadedBytes || 0)
+const totalBytes = computed<number>(() => progress.value.totalBytes || 0)
+const overallPercentage = computed<number>(() => {
+  if (totalBytes.value === 0) return status.value === 'completed' ? 100 : 0
+  return Math.min(100, Math.round((downloadedBytes.value / totalBytes.value) * 100))
+})
+const etaText = computed<string>(() => {
+  const remainingBytes = totalBytes.value - downloadedBytes.value
+  if (status.value === 'completed' || remainingBytes <= 0) return '0s'
+  if (status.value !== 'downloading' || speed.value <= 0) return '--'
+  return formatDuration(Math.ceil(remainingBytes / speed.value))
+})
+const overallSizeText = computed<string>(() =>
+  `${formatSize(downloadedBytes.value)}/${formatSize(totalBytes.value)} (${overallPercentage.value}%)`
+)
+const speedText = computed<string>(() => `\u901f\u5ea6: ${formatSpeed(speed.value)}`)
+const etaDisplayText = computed<string>(() => `\u9884\u8ba1\u5269\u4f59: ${etaText.value}`)
+const layersText = computed<string>(() => `\u603b\u8ba1: ${currentLayer.value}/${totalLayers.value} \u5c42`)
 
 const formatSize = (bytes: number): string => {
   if (!bytes) return '0B'
-  const units: string[] = ['B', 'KB', 'MB', 'GB']
-  let size: number = bytes
+  const units = ['B', 'KB', 'MB', 'GB']
+  let size = bytes
   for (const unit of units) {
     if (size < 1024) return `${size.toFixed(1)}${unit}`
     size /= 1024
@@ -66,77 +76,48 @@ const formatSize = (bytes: number): string => {
   return `${size.toFixed(1)}TB`
 }
 
-const formatSpeed = (bytesPerSec: number): string => {
-  return formatSize(bytesPerSec) + '/s'
-}
+const formatSpeed = (bytesPerSec: number): string => `${formatSize(bytesPerSec)}/s`
 
-const getPercentage = (layer: LayerProgress): number => {
-  if (layer.total === 0) return 0
-  return Math.round((layer.downloaded / layer.total) * 100)
-}
-
-const layerStatusText = (status: LayerStatus): string => {
-  const texts: Record<LayerStatus, string> = {
-    waiting: '等待',
-    downloading: '下载',
-    verifying: '校验',
-    completed: '完成',
-    failed: '失败',
-    cancelled: '取消'
-  }
-  return texts[status]
+const formatDuration = (seconds: number): string => {
+  const hours = Math.floor(seconds / 3600)
+  const minutes = Math.floor((seconds % 3600) / 60)
+  const remainingSeconds = seconds % 60
+  if (hours > 0) return `${hours}h ${minutes.toString().padStart(2, '0')}m ${remainingSeconds.toString().padStart(2, '0')}s`
+  if (minutes > 0) return `${minutes}m ${remainingSeconds.toString().padStart(2, '0')}s`
+  return `${remainingSeconds}s`
 }
 </script>
 
 <style scoped>
 .download-progress {
   background: #fff;
-  border-radius: 8px;
-  padding: 12px;
-  margin-top: 16px;
   border: 1px solid #e4e7ed;
+  border-radius: 8px;
+  margin-top: 16px;
+  padding: 12px;
 }
+
 .progress-header {
   display: flex;
   justify-content: space-between;
   margin-bottom: 12px;
 }
+
 .progress-title {
   font-weight: bold;
 }
+
 .progress-status {
   color: #409eff;
 }
-.progress-layers {
-  max-height: 120px;
-  overflow-y: auto;
-  min-height: 0;
-}
-.layer-item {
-  margin-bottom: 8px;
-}
-.layer-header {
-  display: flex;
-  align-items: center;
-  margin-bottom: 4px;
-}
-.layer-status-icon {
-  margin-right: 6px;
-}
-.layer-name {
-  font-size: 12px;
+
+.overall-details {
   color: #606266;
-}
-.layer-info {
-  font-size: 12px;
-  color: #909399;
-  text-align: right;
-}
-.progress-summary {
   display: flex;
+  flex-wrap: wrap;
+  font-size: 12px;
+  gap: 4px 12px;
   justify-content: space-between;
-  margin-top: 8px;
-  font-size: 12px;
-  color: #606266;
+  margin-top: 6px;
 }
 </style>

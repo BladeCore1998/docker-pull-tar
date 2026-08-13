@@ -212,15 +212,26 @@ async fn pipeline_reuses_bearer_bounds_workers_preserves_layer_order_and_archive
         .filter(|(event, _)| *event == "download://log")
         .map(|(_, payload)| payload["message"].as_str().unwrap())
         .collect::<Vec<_>>();
-    assert_eq!(
-        logs,
-        [
-            "Resolving image manifest",
-            "Downloading image blobs",
-            "Verifying downloaded image",
-            "Packing Docker archive",
-        ]
-    );
+    assert!(logs.contains(&"Resolving image manifest"));
+    assert!(logs.contains(&"Downloading 10 layers with 2 workers"));
+    assert!(logs.contains(&"Downloading config sha256:aaaaaaaaaaaa (10 B)"));
+    assert!(logs.contains(&"Verifying config sha256:aaaaaaaaaaaa"));
+    for index in 1..=10 {
+        assert!(
+            logs.iter()
+                .any(|message| message.starts_with(&format!("Downloading layer {index}/10 ")))
+        );
+        assert!(
+            logs.iter()
+                .any(|message| message.starts_with(&format!("Verifying layer {index}/10 ")))
+        );
+        assert!(
+            logs.iter()
+                .any(|message| message.starts_with(&format!("Completed layer {index}/10 ")))
+        );
+    }
+    assert!(logs.contains(&"Verifying downloaded image"));
+    assert!(logs.contains(&"Packing Docker archive"));
     assert!(
         !serde_json::to_string(&*events)
             .unwrap()

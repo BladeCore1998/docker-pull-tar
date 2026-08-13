@@ -53,7 +53,7 @@ watch(
   border-radius: 8px;
   padding: 12px;
   margin-top: 16px;
-  min-height: 0;
+  height: 220px;
   display: flex;
   flex-direction: column;
 }
@@ -68,7 +68,6 @@ watch(
   font-weight: bold;
 }
 .log-content {
-  height: auto;
   min-height: 0;
   flex: 1 1 auto;
   overflow-y: auto;

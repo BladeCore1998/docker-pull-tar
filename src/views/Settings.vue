@@ -172,7 +172,7 @@ const editMirror = (mirror: Mirror): void => {
   newMirror.name = mirror.name
   newMirror.registry = mirror.registry
   newMirror.username = mirror.username || ''
-  newMirror.password = mirror.password || ''
+  newMirror.password = ''
   addMirrorVisible.value = true
 }
 
@@ -190,7 +190,7 @@ const saveMirror = async (): Promise<void> => {
         name,
         registry,
         username: newMirror.username || null,
-        password: newMirror.password || null
+        ...(newMirror.password ? { password: newMirror.password } : {})
       })
       ElMessage.success('镜像源已更新')
     } else {

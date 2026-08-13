@@ -303,12 +303,20 @@ impl DownloadPipeline for ProductionDownloadPipeline {
             session = self.registry.resolve_session(&image, platform, credentials) => session?,
         };
         transition(&context, DownloadStatus::Downloading).await?;
-        if !context.log("info", "Downloading image blobs").await {
-            return Err(AppError::TaskCancelled);
-        }
-
         let output_dir = PathBuf::from(&request.output_dir);
         let workers = self.config.settings().await.download_workers.clamp(1, 8) as usize;
+        if !context
+            .log(
+                "info",
+                format!(
+                    "Downloading {} layers with {workers} workers",
+                    session.image.layers.len()
+                ),
+            )
+            .await
+        {
+            return Err(AppError::TaskCancelled);
+        }
         let mut progress = initial_progress(&session.image.config, &session.image.layers);
         if !context.report_progress(progress.clone(), false).await {
             mark_incomplete_layers(&mut progress, LayerStatus::Cancelled);
@@ -358,6 +366,8 @@ impl DownloadPipeline for ProductionDownloadPipeline {
         let manifest_digest = session.image.manifest_digest.clone();
         let download_cancellation = cancellation.clone();
         let job_updates = updates_tx.clone();
+        let job_context = context.clone();
+        let total_layers = session.image.layers.len();
         let downloads = stream::iter(jobs.into_iter().map(move |job| {
             let blobs = blobs.clone();
             let root = download_root.clone();
@@ -367,8 +377,18 @@ impl DownloadPipeline for ProductionDownloadPipeline {
             let authorization = authorization.clone();
             let cancellation = download_cancellation.clone();
             let updates = job_updates.clone();
+            let context = job_context.clone();
             async move {
                 let kind = job.kind;
+                if !context
+                    .log(
+                        "info",
+                        download_started_message(kind, &job.descriptor, total_layers),
+                    )
+                    .await
+                {
+                    return (kind, Err(AppError::TaskCancelled));
+                }
                 let callback: BlobEventCallback = Arc::new(move |event| {
                     let _ = updates.send(JobUpdate { kind, event });
                 });
@@ -400,6 +420,7 @@ impl DownloadPipeline for ProductionDownloadPipeline {
 
         let mut config_path = None;
         let mut layer_paths = vec![None; session.image.layers.len()];
+        let mut config_verifying = false;
         let mut downloads_finished = false;
         while !downloads_finished {
             tokio::select! {
@@ -410,6 +431,16 @@ impl DownloadPipeline for ProductionDownloadPipeline {
                     return Err(AppError::TaskCancelled);
                 },
                 Some(update) = updates_rx.recv() => {
+                    if let Some(message) = verification_log_message(
+                        &update,
+                        &session.image.config,
+                        &session.image.layers,
+                        &mut config_verifying,
+                    ) && !context.log("info", message).await {
+                        mark_incomplete_layers(&mut progress, LayerStatus::Cancelled);
+                        context.report_terminal_progress(progress).await;
+                        return Err(AppError::TaskCancelled);
+                    }
                     let force_event = apply_blob_event(
                         &mut progress, &mut config_downloaded, &mut speeds, update,
                     );
@@ -425,6 +456,19 @@ impl DownloadPipeline for ProductionDownloadPipeline {
                         config_path = Some(path);
                         config_downloaded = session.image.config.size;
                         recompute_totals(&mut progress, config_downloaded, &speeds);
+                        if !context
+                            .log(
+                                "success",
+                                download_completed_message(
+                                    JobKind::Config,
+                                    &session.image.config,
+                                    session.image.layers.len(),
+                                ),
+                            )
+                            .await
+                        {
+                            return Err(AppError::TaskCancelled);
+                        }
                     },
                     Some((JobKind::Layer(index), Ok(path))) => {
                         speeds[index + 1] = 0.0;
@@ -433,13 +477,36 @@ impl DownloadPipeline for ProductionDownloadPipeline {
                         progress.layers[index].downloaded = progress.layers[index].total;
                         progress.current_layer = layer_paths.iter().filter(|path| path.is_some()).count() as u32;
                         recompute_totals(&mut progress, config_downloaded, &speeds);
+                        if !context
+                            .log(
+                                "success",
+                                download_completed_message(
+                                    JobKind::Layer(index),
+                                    &session.image.layers[index],
+                                    session.image.layers.len(),
+                                ),
+                            )
+                            .await
+                        {
+                            return Err(AppError::TaskCancelled);
+                        }
                         if !context.report_progress(progress.clone(), true).await {
                             mark_incomplete_layers(&mut progress, LayerStatus::Cancelled);
                             context.report_terminal_progress(progress).await;
                             return Err(AppError::TaskCancelled);
                         }
                     }
-                    Some((_kind, Err(error))) => {
+                    Some((kind, Err(error))) => {
+                        let _ = context
+                            .log(
+                                "error",
+                                format!(
+                                    "{} failed: {}",
+                                    download_label(kind, session.image.layers.len()),
+                                    error
+                                ),
+                            )
+                            .await;
                         mark_incomplete_layers(&mut progress, LayerStatus::Failed);
                         context.report_terminal_progress(progress).await;
                         return Err(error);
@@ -603,6 +670,78 @@ fn recompute_totals(progress: &mut DownloadProgress, config_downloaded: u64, spe
             total.saturating_add(layer.downloaded)
         });
     progress.speed = speeds.iter().copied().sum();
+}
+
+fn download_started_message(kind: JobKind, descriptor: &Descriptor, total_layers: usize) -> String {
+    format!(
+        "Downloading {} {} ({})",
+        download_label(kind, total_layers),
+        short_digest(&descriptor.digest),
+        format_bytes(descriptor.size),
+    )
+}
+
+fn verification_log_message(
+    update: &JobUpdate,
+    config: &Descriptor,
+    layers: &[Descriptor],
+    config_verifying: &mut bool,
+) -> Option<String> {
+    if !matches!(update.event, BlobEvent::Verifying) {
+        return None;
+    }
+    match update.kind {
+        JobKind::Config if !*config_verifying => {
+            *config_verifying = true;
+            Some(format!("Verifying config {}", short_digest(&config.digest)))
+        }
+        JobKind::Config => None,
+        JobKind::Layer(index) => Some(format!(
+            "Verifying {} {}",
+            download_label(JobKind::Layer(index), layers.len()),
+            short_digest(&layers[index].digest),
+        )),
+    }
+}
+
+fn download_completed_message(
+    kind: JobKind,
+    descriptor: &Descriptor,
+    total_layers: usize,
+) -> String {
+    format!(
+        "Completed {} {}",
+        download_label(kind, total_layers),
+        short_digest(&descriptor.digest),
+    )
+}
+
+fn download_label(kind: JobKind, total_layers: usize) -> String {
+    match kind {
+        JobKind::Config => "config".into(),
+        JobKind::Layer(index) => format!("layer {}/{}", index + 1, total_layers),
+    }
+}
+
+fn short_digest(digest: &str) -> &str {
+    let length = digest.len().min(19);
+    &digest[..length]
+}
+
+fn format_bytes(bytes: u64) -> String {
+    const UNITS: [&str; 5] = ["B", "KB", "MB", "GB", "TB"];
+    let mut value = bytes as f64;
+    for unit in UNITS {
+        if value < 1024.0 || unit == "TB" {
+            return if unit == "B" {
+                format!("{bytes} {unit}")
+            } else {
+                format!("{value:.1} {unit}")
+            };
+        }
+        value /= 1024.0;
+    }
+    unreachable!("TB is the final unit")
 }
 
 fn mark_incomplete_layers(progress: &mut DownloadProgress, status: LayerStatus) {
