@@ -413,9 +413,10 @@ fn validate_content_length(
     if let Some(actual) = value
         .and_then(|value| value.to_str().ok())
         .and_then(|value| value.parse::<u64>().ok())
-        && actual != expected
     {
-        return Err(AppError::ResumeNotSupported);
+        if actual != expected {
+            return Err(AppError::ResumeNotSupported);
+        }
     }
     Ok(())
 }

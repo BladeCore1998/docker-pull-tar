@@ -410,11 +410,58 @@ async fn finalize(
     if snapshot.task_id != task_id {
         return;
     }
+    emit_terminal_log(
+        inner.events.as_ref(),
+        &task_id,
+        &request,
+        &terminal,
+        &finished_at,
+    );
     snapshot.status = terminal.status;
     snapshot.finished_at = Some(finished_at);
     snapshot.last_error = terminal.error;
     emit_snapshot(inner.events.as_ref(), &snapshot);
     active.take();
+}
+
+fn emit_terminal_log(
+    events: &dyn EventSink,
+    task_id: &str,
+    request: &DownloadStartRequest,
+    terminal: &Terminal,
+    timestamp: &str,
+) {
+    let (level, message) = match terminal.status {
+        DownloadStatus::Completed => (
+            "success",
+            format!(
+                "Download completed: {}",
+                terminal
+                    .completed
+                    .as_ref()
+                    .map_or("", |value| value.output_path.as_str())
+            ),
+        ),
+        DownloadStatus::Failed => (
+            "error",
+            format!(
+                "Download failed: {}",
+                terminal.error.as_deref().unwrap_or("unknown error")
+            ),
+        ),
+        DownloadStatus::Cancelled => ("warning", "Download cancelled".into()),
+        _ => return,
+    };
+    let secrets: Vec<String> = request.password.iter().cloned().collect();
+    let event = TaskLogEvent {
+        task_id: task_id.to_owned(),
+        log: LogEvent {
+            level: level.into(),
+            message: sanitize(&message, &secrets),
+            timestamp: timestamp.to_owned(),
+        },
+    };
+    emit_serialized(events, DOWNLOAD_LOG_EVENT, &event);
 }
 
 fn terminal_history_item(

@@ -10,7 +10,7 @@
 
       <div class="card-body">
         <div class="section-title">基本设置</div>
-        <el-form :model="settings" label-width="120px">
+        <el-form :model="settings" label-position="top" class="settings-form">
           <el-form-item label="默认输出目录">
             <el-input v-model="settings.defaultOutputDir">
               <template #append>
@@ -27,11 +27,11 @@
             </el-select>
           </el-form-item>
 
-          <el-form-item label="下载线程数">
+          <el-form-item label="下载线程数" class="workers-field">
             <el-slider v-model="settings.downloadWorkers" :min="1" :max="8" show-stops />
           </el-form-item>
 
-          <el-form-item>
+          <el-form-item class="save-field">
             <el-button type="primary" @click="saveSettings">保存设置</el-button>
           </el-form-item>
         </el-form>
@@ -39,7 +39,7 @@
         <el-divider />
 
         <div class="section-title">镜像源管理</div>
-        <el-table :data="mirrors" style="width: 100%">
+        <el-table :data="mirrors" style="width: 100%" empty-text="暂无镜像源">
           <el-table-column prop="name" label="名称" width="120" />
           <el-table-column prop="registry" label="地址" />
           <el-table-column label="认证" width="100">
@@ -125,7 +125,6 @@ const newMirror: NewMirrorForm = reactive({
 })
 
 onMounted(async () => {
-  console.log('Settings page mounted, loading settings...')
   try {
     await settingsStore.loadSettings()
     Object.assign(settings, settingsStore.settings)
@@ -243,19 +242,18 @@ const deleteMirror = async (id: string): Promise<void> => {
 
 <style scoped>
 .settings-page {
-  padding: 20px;
-  max-width: 960px;
+  padding: 24px;
+  max-width: 1040px;
   margin: 0 auto;
-  height: calc(100vh - 60px);
-  overflow: hidden;
-}
-.settings-card {
-  height: 92%;
+  box-sizing: border-box;
 }
 .settings-card :deep(.el-card__body) {
-  height: calc(100% - 60px);
-  overflow-y: auto;
-  padding: 20px;
+  padding: 0 24px 24px;
+}
+.settings-card :deep(.el-card__header) {
+  padding: 20px 24px;
+  font-size: 20px;
+  font-weight: 600;
 }
 .card-header {
   display: flex;
@@ -267,16 +265,37 @@ const deleteMirror = async (id: string): Promise<void> => {
   flex-direction: column;
 }
 .section-title {
-  font-weight: bold;
+  font-weight: 600;
   font-size: 14px;
   color: #303133;
   margin-bottom: 12px;
 }
-/* 让基本设置更紧凑 */
+.settings-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 200px;
+  column-gap: 24px;
+}
+.settings-form :deep(.el-form-item:first-child),
+.workers-field,
+.save-field {
+  grid-column: 1 / -1;
+}
+.settings-card :deep(.el-select) {
+  width: 100%;
+}
 .settings-card :deep(.el-form-item) {
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 .settings-card :deep(.el-slider) {
-  margin-top: 4px;
+  max-width: 480px;
+  padding: 0 8px;
+  box-sizing: border-box;
+}
+.settings-card :deep(.el-divider) {
+  margin: 8px 0 16px;
+}
+@media (max-width: 600px) {
+  .settings-page { padding: 16px; }
+  .settings-form { grid-template-columns: minmax(0, 1fr); }
 }
 </style>

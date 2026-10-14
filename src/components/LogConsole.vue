@@ -1,8 +1,8 @@
 <template>
-  <div class="log-console">
+  <div class="log-console" :class="{ 'is-embedded': embedded }">
     <div class="log-header">
-      <span class="log-title">控制台日志</span>
-      <el-button size="small" @click="clearLogs">清空日志</el-button>
+      <span class="log-title">下载日志 <small>{{ logs.length }} 条</small></span>
+      <el-button link size="small" @click="clearLogs" :disabled="logs.length === 0">清空</el-button>
     </div>
     <div class="log-content" ref="logContainer">
       <div v-for="(log, index) in logs" :key="index" class="log-item" :class="log.level">
@@ -20,6 +20,9 @@
 import { ref, watch, nextTick, computed } from 'vue'
 import { useDownloadStore } from '@/stores/download'
 
+withDefaults(defineProps<{ embedded?: boolean }>(), {
+  embedded: false
+})
 const downloadStore = useDownloadStore()
 const logContainer = ref<HTMLDivElement | null>(null)
 
@@ -36,26 +39,31 @@ const formatTime = (timestamp: string | null): string => {
 }
 
 watch(
-  () => downloadStore.logs.length,
+  () => downloadStore.logs,
   () => {
     nextTick(() => {
       if (logContainer.value) {
         logContainer.value.scrollTop = logContainer.value.scrollHeight
       }
     })
-  }
+  },
+  { immediate: true }
 )
 </script>
 
 <style scoped>
 .log-console {
-  background: #1e1e1e;
-  border-radius: 8px;
-  padding: 12px;
+  background: #151c2b;
+  border-radius: 12px;
+  padding: 14px;
   margin-top: 16px;
   height: 220px;
   display: flex;
   flex-direction: column;
+}
+.log-console.is-embedded {
+  height: 210px;
+  margin-top: 12px;
 }
 .log-header {
   display: flex;
@@ -65,7 +73,17 @@ watch(
   color: #fff;
 }
 .log-title {
-  font-weight: bold;
+  font-size: 13px;
+  font-weight: 600;
+}
+.log-title small {
+  color: #8590a8;
+  font-size: 11px;
+  font-weight: 400;
+  margin-left: 6px;
+}
+.log-header :deep(.el-button) {
+  color: #a5b4fc;
 }
 .log-content {
   min-height: 0;
@@ -77,6 +95,10 @@ watch(
 .log-item {
   padding: 4px 0;
   color: #d4d4d4;
+  line-height: 1.65;
+}
+.log-message {
+  overflow-wrap: anywhere;
 }
 .log-item.info {
   color: #9cdcfe;
@@ -91,11 +113,11 @@ watch(
   color: #4ec9b0;
 }
 .log-time {
-  color: #6a9955;
+  color: #8590a8;
   margin-right: 8px;
 }
 .log-empty {
-  color: #6a9955;
+  color: #8590a8;
   text-align: center;
   padding: 20px;
 }

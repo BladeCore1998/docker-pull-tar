@@ -379,6 +379,53 @@ async fn wait_for_status(manager: &TaskManager, expected: DownloadStatus) -> Dow
 }
 
 #[tokio::test]
+async fn terminal_outcomes_emit_one_log_with_task_identity_and_error_details() {
+    for (finish, expected, level) in [
+        (Finish::Complete, DownloadStatus::Completed, "success"),
+        (Finish::Error, DownloadStatus::Failed, "error"),
+        (Finish::Panic, DownloadStatus::Failed, "error"),
+    ] {
+        let pipeline = Arc::new(FakePipeline::new(
+            vec![
+                DownloadStatus::Downloading,
+                DownloadStatus::Verifying,
+                DownloadStatus::Packing,
+            ],
+            None,
+            finish,
+        ));
+        let (manager, events, _) = manager(pipeline);
+        let task_id = manager.start(request(None)).await.unwrap();
+        let snapshot = wait_for_status(&manager, expected).await;
+        let logs = events.named(DOWNLOAD_LOG_EVENT);
+        assert_eq!(logs.len(), 1, "each terminal outcome must be logged once");
+        let log: TaskLogEvent = serde_json::from_value(logs[0].clone()).unwrap();
+        assert_eq!(log.task_id, task_id);
+        assert_eq!(log.log.level, level);
+        assert!(!log.log.timestamp.is_empty());
+        if let Some(error) = snapshot.last_error {
+            assert!(log.log.message.contains(&error));
+        } else {
+            assert!(log.log.message.contains("nginx.tar"));
+        }
+    }
+}
+
+#[tokio::test]
+async fn cancellation_emits_a_terminal_log_even_after_token_is_cancelled() {
+    let pipeline = Arc::new(FakePipeline::completing());
+    let (manager, events, _) = manager(pipeline.clone());
+    let task_id = manager.start(request(None)).await.unwrap();
+    pipeline.wait_until_reached().await;
+    assert!(manager.cancel().await);
+    wait_for_status(&manager, DownloadStatus::Cancelled).await;
+    let logs = events.named(DOWNLOAD_LOG_EVENT);
+    assert_eq!(logs.len(), 1);
+    assert_eq!(logs[0]["taskId"], task_id);
+    assert_eq!(logs[0]["level"], "warning");
+}
+
+#[tokio::test]
 async fn publishes_legal_order_and_completes_only_after_archive_result() {
     let pipeline = Arc::new(FakePipeline::completing());
     let (manager, events, history) = manager(pipeline.clone());

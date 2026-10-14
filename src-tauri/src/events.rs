@@ -5,6 +5,7 @@ use serde_json::Value;
 pub const DOWNLOAD_STATE_EVENT: &str = "download://state";
 pub const DOWNLOAD_PROGRESS_EVENT: &str = "download://progress";
 pub const DOWNLOAD_LOG_EVENT: &str = "download://log";
+pub const BATCH_STATE_EVENT: &str = "batch://state";
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

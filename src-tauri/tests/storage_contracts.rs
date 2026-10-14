@@ -84,25 +84,22 @@ impl CredentialStore for FailingCredentialStore {
             return Err(AppError::CredentialStoreFailed);
         }
         self.values.lock().await.insert(key.into(), value.clone());
-        if let Some((call, path)) = self
-            .block_config_recovery_after_set_at
-            .lock()
-            .await
-            .as_ref()
-            && *call == *calls
-        {
-            let recovery = path.with_file_name(format!(
-                "{}.recovery",
-                path.file_name().unwrap().to_string_lossy()
-            ));
-            match tokio::fs::remove_file(&recovery).await {
-                Ok(()) => {}
-                Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
-                Err(_) => return Err(AppError::ConfigIoFailed),
+        let blocked_recovery = self.block_config_recovery_after_set_at.lock().await.clone();
+        if let Some((call, path)) = blocked_recovery {
+            if call == *calls {
+                let recovery = path.with_file_name(format!(
+                    "{}.recovery",
+                    path.file_name().unwrap().to_string_lossy()
+                ));
+                match tokio::fs::remove_file(&recovery).await {
+                    Ok(()) => {}
+                    Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+                    Err(_) => return Err(AppError::ConfigIoFailed),
+                }
+                tokio::fs::create_dir(recovery)
+                    .await
+                    .map_err(|_| AppError::ConfigIoFailed)?;
             }
-            tokio::fs::create_dir(recovery)
-                .await
-                .map_err(|_| AppError::ConfigIoFailed)?;
         }
         if *self.fail_set_at.lock().await == Some(*calls) {
             return Err(AppError::CredentialStoreFailed);
@@ -119,31 +116,33 @@ impl CredentialStore for FailingCredentialStore {
         if *self.fail_get_after_delete_at.lock().await == Some(*calls) {
             *self.fail_next_get.lock().await = true;
         }
-        if let Some((call, path)) = self.block_config_restore_at.lock().await.as_ref()
-            && *call == *calls
-        {
-            tokio::fs::remove_file(path)
-                .await
-                .map_err(|_| AppError::ConfigIoFailed)?;
-            tokio::fs::create_dir(path)
-                .await
-                .map_err(|_| AppError::ConfigIoFailed)?;
-        }
-        if let Some((call, path)) = self.block_config_recovery_at.lock().await.as_ref()
-            && *call == *calls
-        {
-            let recovery = path.with_file_name(format!(
-                "{}.recovery",
-                path.file_name().unwrap().to_string_lossy()
-            ));
-            match tokio::fs::remove_file(&recovery).await {
-                Ok(()) => {}
-                Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
-                Err(_) => return Err(AppError::ConfigIoFailed),
+        let blocked_restore = self.block_config_restore_at.lock().await.clone();
+        if let Some((call, path)) = blocked_restore {
+            if call == *calls {
+                tokio::fs::remove_file(&path)
+                    .await
+                    .map_err(|_| AppError::ConfigIoFailed)?;
+                tokio::fs::create_dir(path)
+                    .await
+                    .map_err(|_| AppError::ConfigIoFailed)?;
             }
-            tokio::fs::create_dir(recovery)
-                .await
-                .map_err(|_| AppError::ConfigIoFailed)?;
+        }
+        let blocked_recovery = self.block_config_recovery_at.lock().await.clone();
+        if let Some((call, path)) = blocked_recovery {
+            if call == *calls {
+                let recovery = path.with_file_name(format!(
+                    "{}.recovery",
+                    path.file_name().unwrap().to_string_lossy()
+                ));
+                match tokio::fs::remove_file(&recovery).await {
+                    Ok(()) => {}
+                    Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+                    Err(_) => return Err(AppError::ConfigIoFailed),
+                }
+                tokio::fs::create_dir(recovery)
+                    .await
+                    .map_err(|_| AppError::ConfigIoFailed)?;
+            }
         }
         if *self.fail_delete_at.lock().await == Some(*calls) {
             *self.fail_delete_at.lock().await = None;

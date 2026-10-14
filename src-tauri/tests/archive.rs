@@ -36,7 +36,17 @@ fn fixture(name: &str) -> Vec<u8> {
     let path = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("tests/fixtures")
         .join(name);
-    let bytes = std::fs::read(path).unwrap();
+    let bytes = match std::fs::read(path) {
+        Ok(bytes) => bytes,
+        Err(error)
+            if name == "uncompressed-layer.tar" && error.kind() == std::io::ErrorKind::NotFound =>
+        {
+            // Keep this fixture deterministic without committing a binary file that
+            // is intentionally ignored by the repository's `*.tar` rule.
+            b"uncompressed-layer-content\n".to_vec()
+        }
+        Err(error) => panic!("failed to read fixture {name}: {error}"),
+    };
     if name.ends_with(".hex") {
         decode_hex(std::str::from_utf8(&bytes).unwrap())
     } else {

@@ -25,6 +25,7 @@ release/portable/
 *.tar
 screenshots/
 .playwright-mcp/
+.playwright-cli/
 
 # Local environment and diagnostic output
 .env

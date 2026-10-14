@@ -43,3 +43,11 @@ _Avoid_: Image package, output bundle
 **History Entry**:
 The durable record of a completed, failed, or cancelled download task.
 _Avoid_: Log entry, download item
+
+**Download Batch**:
+A user-submitted group of up to ten download tasks that share one registry and credential context and can run concurrently.
+_Avoid_: Queue when referring to the submitted group itself
+
+**Batch Task**:
+One image download task within a download batch. It has its own lifecycle, cancellation, retry, snapshot, and output.
+_Avoid_: Layer task when referring to the image-level unit

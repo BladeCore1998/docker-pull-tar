@@ -38,7 +38,7 @@ Rust commands -> task_manager -> registry / blob / archive
 - Windows 10/11 x64。
 - Microsoft Edge WebView2 Runtime。
 - Node.js 20+ 与 pnpm 9。
-- Rust stable，包含 `x86_64-pc-windows-msvc` target。
+- Rust 1.85+，包含 `x86_64-pc-windows-msvc` target。
 - Visual Studio 2022 Build Tools，包含 Desktop development with C++ 和 Windows SDK。
 
 运行已经构建的 `DockerPull.exe` 不需要 Node.js、Rust、Python 或 Docker。

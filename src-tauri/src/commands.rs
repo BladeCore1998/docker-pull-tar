@@ -1,6 +1,7 @@
+use crate::batch_manager::BatchManager;
 use crate::domain::{
-    AppSettings, DownloadSnapshot, DownloadStartRequest, HistoryItem, Mirror, MirrorInput,
-    MirrorPatch, SettingsPatch,
+    AppSettings, BatchSnapshot, BatchStartRequest, DownloadSnapshot, DownloadStartRequest,
+    HistoryItem, Mirror, MirrorInput, MirrorPatch, SettingsPatch,
 };
 use crate::download_pipeline::DownloadService;
 use crate::error::{AppError, CommandError};
@@ -76,6 +77,7 @@ pub struct AppState {
     pub config: ConfigStore,
     downloads: Arc<dyn DownloadService>,
     system: Arc<dyn SystemActions>,
+    batches: Option<Arc<BatchManager>>,
 }
 
 impl AppState {
@@ -88,6 +90,21 @@ impl AppState {
             config,
             downloads,
             system,
+            batches: None,
+        }
+    }
+
+    pub fn with_batches(
+        config: ConfigStore,
+        downloads: Arc<dyn DownloadService>,
+        system: Arc<dyn SystemActions>,
+        batches: Arc<BatchManager>,
+    ) -> Self {
+        Self {
+            config,
+            downloads,
+            system,
+            batches: Some(batches),
         }
     }
 }
@@ -109,6 +126,74 @@ pub async fn download_cancel_impl(state: &AppState) -> Result<DownloadSnapshot, 
 
 pub async fn download_status_impl(state: &AppState) -> Result<DownloadSnapshot, CommandError> {
     Ok(state.downloads.status().await)
+}
+
+pub async fn batch_start_impl(
+    state: &AppState,
+    request: BatchStartRequest,
+) -> Result<BatchSnapshot, CommandError> {
+    let Some(batches) = &state.batches else {
+        return Err(CommandError::from(AppError::InternalError(
+            "batch downloads are unavailable in this state".into(),
+        )));
+    };
+    batches.start(request).await.map_err(CommandError::from)
+}
+
+pub async fn batch_status_impl(
+    state: &AppState,
+    batch_id: String,
+) -> Result<BatchSnapshot, CommandError> {
+    let Some(batches) = &state.batches else {
+        return Err(CommandError::from(AppError::InternalError(
+            "batch downloads are unavailable in this state".into(),
+        )));
+    };
+    batches.status(&batch_id).await.map_err(CommandError::from)
+}
+
+pub async fn batch_cancel_impl(
+    state: &AppState,
+    batch_id: String,
+) -> Result<BatchSnapshot, CommandError> {
+    let Some(batches) = &state.batches else {
+        return Err(CommandError::from(AppError::InternalError(
+            "batch downloads are unavailable in this state".into(),
+        )));
+    };
+    batches.cancel(&batch_id).await.map_err(CommandError::from)
+}
+
+pub async fn batch_task_cancel_impl(
+    state: &AppState,
+    batch_id: String,
+    task_id: String,
+) -> Result<BatchSnapshot, CommandError> {
+    let Some(batches) = &state.batches else {
+        return Err(CommandError::from(AppError::InternalError(
+            "batch downloads are unavailable in this state".into(),
+        )));
+    };
+    batches
+        .cancel_task(&batch_id, &task_id)
+        .await
+        .map_err(CommandError::from)
+}
+
+pub async fn batch_task_retry_impl(
+    state: &AppState,
+    batch_id: String,
+    task_id: String,
+) -> Result<BatchSnapshot, CommandError> {
+    let Some(batches) = &state.batches else {
+        return Err(CommandError::from(AppError::InternalError(
+            "batch downloads are unavailable in this state".into(),
+        )));
+    };
+    batches
+        .retry_task(&batch_id, &task_id)
+        .await
+        .map_err(CommandError::from)
 }
 
 pub async fn settings_get_impl(state: &AppState) -> Result<AppSettings, CommandError> {
@@ -252,6 +337,48 @@ pub async fn download_status(
     state: tauri::State<'_, AppState>,
 ) -> Result<DownloadSnapshot, CommandError> {
     download_status_impl(&state).await
+}
+
+#[tauri::command]
+pub async fn batch_start(
+    state: tauri::State<'_, AppState>,
+    request: BatchStartRequest,
+) -> Result<BatchSnapshot, CommandError> {
+    batch_start_impl(&state, request).await
+}
+
+#[tauri::command]
+pub async fn batch_status(
+    state: tauri::State<'_, AppState>,
+    batch_id: String,
+) -> Result<BatchSnapshot, CommandError> {
+    batch_status_impl(&state, batch_id).await
+}
+
+#[tauri::command]
+pub async fn batch_cancel(
+    state: tauri::State<'_, AppState>,
+    batch_id: String,
+) -> Result<BatchSnapshot, CommandError> {
+    batch_cancel_impl(&state, batch_id).await
+}
+
+#[tauri::command]
+pub async fn batch_task_cancel(
+    state: tauri::State<'_, AppState>,
+    batch_id: String,
+    task_id: String,
+) -> Result<BatchSnapshot, CommandError> {
+    batch_task_cancel_impl(&state, batch_id, task_id).await
+}
+
+#[tauri::command]
+pub async fn batch_task_retry(
+    state: tauri::State<'_, AppState>,
+    batch_id: String,
+    task_id: String,
+) -> Result<BatchSnapshot, CommandError> {
+    batch_task_retry_impl(&state, batch_id, task_id).await
 }
 
 #[tauri::command]

@@ -2,6 +2,8 @@ import { invoke } from '@tauri-apps/api/core'
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 import type {
   AppSettings,
+  BatchSnapshot,
+  BatchStartRequest,
   CommandResult,
   DownloadSnapshot,
   DownloadStartRequest,
@@ -31,6 +33,21 @@ export const downloadApi = {
     listenTo('download://progress', handler),
   onLog: (handler: EventHandler<TaskLogEvent>): Promise<UnlistenFn> =>
     listenTo('download://log', handler)
+}
+
+export const batchApi = {
+  start: (request: BatchStartRequest): Promise<BatchSnapshot> =>
+    invoke('batch_start', { request }),
+  status: (batchId: string): Promise<BatchSnapshot> =>
+    invoke('batch_status', { batchId }),
+  cancel: (batchId: string): Promise<BatchSnapshot> =>
+    invoke('batch_cancel', { batchId }),
+  cancelTask: (batchId: string, taskId: string): Promise<BatchSnapshot> =>
+    invoke('batch_task_cancel', { batchId, taskId }),
+  retryTask: (batchId: string, taskId: string): Promise<BatchSnapshot> =>
+    invoke('batch_task_retry', { batchId, taskId }),
+  onState: (handler: EventHandler<BatchSnapshot>): Promise<UnlistenFn> =>
+    listenTo('batch://state', handler)
 }
 
 export const settingsApi = {

@@ -1,9 +1,10 @@
 import { defineStore } from 'pinia'
 import type { UnlistenFn } from '@tauri-apps/api/event'
-import { downloadApi } from '@/api/tauri'
+import { batchApi, downloadApi } from '@/api/tauri'
 import { parseImageInput } from '@/utils/imageParser'
 import type {
   DownloadSnapshot,
+  BatchSnapshot,
   DownloadStatus,
   LogEvent,
   TaskLogEvent,
@@ -49,7 +50,10 @@ function idleSnapshot(): DownloadSnapshot {
 
 interface DownloadState {
   snapshot: DownloadSnapshot
+  batch: BatchSnapshot | null
+  selectedTaskId: string | null
   logs: LogEvent[]
+  logsByTaskId: Record<string, LogEvent[]>
   initialized: boolean
   eventUnlisteners: UnlistenFn[]
 }
@@ -59,7 +63,10 @@ let initialization: Promise<void> | null = null
 export const useDownloadStore = defineStore('download', {
   state: (): DownloadState => ({
     snapshot: idleSnapshot(),
+    batch: null,
+    selectedTaskId: null,
     logs: [],
+    logsByTaskId: {},
     initialized: false,
     eventUnlisteners: []
   }),
@@ -69,7 +76,8 @@ export const useDownloadStore = defineStore('download', {
     status: state => state.snapshot.status,
     progress: state => state.snapshot.progress,
     lastError: state => state.snapshot.lastError,
-    isDownloading: state => ACTIVE_DOWNLOAD_STATUSES.includes(state.snapshot.status)
+    isDownloading: state => ACTIVE_DOWNLOAD_STATUSES.includes(state.snapshot.status) ||
+      !!state.batch && ['queued', 'running', 'cancelling'].includes(state.batch.status)
   },
 
   actions: {
@@ -88,6 +96,7 @@ export const useDownloadStore = defineStore('download', {
     async registerEventListeners(): Promise<void> {
       const registered: UnlistenFn[] = []
       try {
+        registered.push(await batchApi.onState(batch => this.applyBatchSnapshot(batch)))
         registered.push(await downloadApi.onState(snapshot => this.applyStateEvent(snapshot)))
         registered.push(await downloadApi.onProgress(event => this.applyProgressEvent(event)))
         registered.push(await downloadApi.onLog(event => this.applyLogEvent(event)))
@@ -111,13 +120,25 @@ export const useDownloadStore = defineStore('download', {
     },
 
     applySnapshot(snapshot: DownloadSnapshot): void {
-      if (snapshot.taskId && snapshot.taskId !== this.snapshot.taskId) {
-        this.logs = []
-      }
       this.snapshot = snapshot
+      this.logs = snapshot.taskId ? (this.logsByTaskId[snapshot.taskId] || []) : []
+      if (this.batch && this.selectedTaskId === snapshot.taskId) {
+        const task = this.batch.tasks.find(item => item.taskId === snapshot.taskId)
+        if (task) task.download = snapshot
+      }
     },
 
     applyStateEvent(snapshot: DownloadSnapshot): void {
+      if (this.batch) {
+        const task = this.batch.tasks.find(item => item.taskId === snapshot.taskId)
+        if (task) {
+          task.download = snapshot
+          if (snapshot.taskId === this.selectedTaskId) {
+            this.applySnapshot(snapshot)
+          }
+        }
+        return
+      }
       const isCurrentTask = snapshot.taskId === this.snapshot.taskId
       const canAdoptTask = !this.snapshot.taskId || (
         snapshot.status === 'preparing' &&
@@ -130,25 +151,46 @@ export const useDownloadStore = defineStore('download', {
 
     applyProgressEvent(event: TaskProgressEvent): void {
       const { taskId, ...progress } = event
-      if (!taskId || taskId !== this.snapshot.taskId) return
-      this.snapshot.progress = progress
+      if (!taskId) return
+      if (this.batch) {
+        const task = this.batch.tasks.find(item => item.taskId === taskId)
+        if (task) task.download.progress = progress
+      }
+      if (taskId === this.snapshot.taskId) {
+        this.snapshot.progress = progress
+      }
     },
 
     applyLogEvent(event: TaskLogEvent): void {
       const { taskId, ...log } = event
-      if (!taskId || taskId !== this.snapshot.taskId) return
-      this.addLog(log)
-    },
-
-    addLog(log: LogEvent): void {
-      this.logs.push(log)
-      if (this.logs.length > 500) {
-        this.logs = this.logs.slice(-500)
+      if (!taskId) return
+      const existing = this.logsByTaskId[taskId] || []
+      const next = [...existing, log].slice(-500)
+      this.logsByTaskId[taskId] = next
+      if (taskId === this.snapshot.taskId) {
+        this.logs = next
       }
     },
 
     clearLogs(): void {
+      if (this.snapshot.taskId) {
+        this.logsByTaskId[this.snapshot.taskId] = []
+      }
       this.logs = []
+    },
+
+    selectTask(taskId: string): void {
+      if (!taskId) return
+      if (this.batch) {
+        const task = this.batch.tasks.find(item => item.taskId === taskId)
+        if (!task) return
+        this.selectedTaskId = taskId
+        this.applySnapshot(task.download)
+        return
+      }
+      if (taskId === this.snapshot.taskId) {
+        this.selectedTaskId = taskId
+      }
     },
 
     async startDownload(
@@ -158,6 +200,10 @@ export const useDownloadStore = defineStore('download', {
       arch: string
     ): Promise<DownloadSnapshot> {
       await this.initialize()
+      this.batch = null
+      this.selectedTaskId = null
+      this.logsByTaskId = {}
+      this.logs = []
       const parsed = parseImageInput(imageInput, mirror)
       if (!parsed) {
         throw new Error('请输入有效的镜像名称')
@@ -176,7 +222,89 @@ export const useDownloadStore = defineStore('download', {
       return snapshot
     },
 
+    applyBatchSnapshot(batch: BatchSnapshot): void {
+      if (this.batch && this.batch.batchId !== batch.batchId) return
+      this.batch = batch
+      const selected = batch.tasks.find(item => item.taskId === this.selectedTaskId) || batch.tasks[0]
+      if (selected) {
+        this.selectedTaskId = selected.taskId
+        this.applySnapshot(selected.download)
+      }
+    },
+
+    async startBatch(
+      imageInputs: string[],
+      outputDir: string,
+      mirror: string,
+      arch: string,
+      maxConcurrentImages = 2
+    ): Promise<BatchSnapshot> {
+      await this.initialize()
+      this.logsByTaskId = {}
+      this.logs = []
+      const images = imageInputs.map(input => {
+        const parsed = parseImageInput(input, mirror)
+        if (!parsed) throw new Error(`无效的镜像名称: ${input}`)
+        return {
+          packageName: parsed.repository,
+          tag: parsed.tag,
+          arch,
+          mirror: parsed.registry,
+          outputDir,
+          username: null,
+          password: null
+        }
+      })
+      const registry = images[0]?.mirror
+      if (!registry || images.some(image => image.mirror !== registry)) {
+        throw new Error('同一批次必须使用同一个镜像源')
+      }
+      const batch = await batchApi.start({ images, maxConcurrentImages })
+      this.batch = batch
+      this.selectedTaskId = batch.tasks[0]?.taskId || null
+      const selected = batch.tasks[0]
+      if (selected) this.applySnapshot(selected.download)
+      return batch
+    },
+
+    async refreshBatch(): Promise<BatchSnapshot | null> {
+      if (!this.batch) return null
+      const batch = await batchApi.status(this.batch.batchId)
+      this.batch = batch
+      const selected = batch.tasks.find(item => item.taskId === this.selectedTaskId) || batch.tasks[0]
+      if (selected) {
+        this.selectedTaskId = selected.taskId
+        this.applySnapshot(selected.download)
+      }
+      return batch
+    },
+
+    async cancelBatch(): Promise<BatchSnapshot | null> {
+      if (!this.batch) return null
+      const batch = await batchApi.cancel(this.batch.batchId)
+      this.applyBatchSnapshot(batch)
+      return batch
+    },
+
+    async cancelBatchTask(taskId: string): Promise<BatchSnapshot | null> {
+      if (!this.batch) return null
+      const batch = await batchApi.cancelTask(this.batch.batchId, taskId)
+      this.applyBatchSnapshot(batch)
+      return batch
+    },
+
+    async retryBatchTask(taskId: string): Promise<BatchSnapshot | null> {
+      if (!this.batch) return null
+      const batch = await batchApi.retryTask(this.batch.batchId, taskId)
+      this.applyBatchSnapshot(batch)
+      return batch
+    },
+
     async cancelDownload(): Promise<DownloadSnapshot> {
+      if (this.batch && ['queued', 'running', 'cancelling'].includes(this.batch.status)) {
+        await this.cancelBatch()
+        return this.snapshot
+      }
       const snapshot = await downloadApi.cancel()
       this.applySnapshot(snapshot)
       return snapshot

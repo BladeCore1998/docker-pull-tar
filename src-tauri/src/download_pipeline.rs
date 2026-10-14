@@ -431,15 +431,18 @@ impl DownloadPipeline for ProductionDownloadPipeline {
                     return Err(AppError::TaskCancelled);
                 },
                 Some(update) = updates_rx.recv() => {
-                    if let Some(message) = verification_log_message(
+                    let verification_message = verification_log_message(
                         &update,
                         &session.image.config,
                         &session.image.layers,
                         &mut config_verifying,
-                    ) && !context.log("info", message).await {
-                        mark_incomplete_layers(&mut progress, LayerStatus::Cancelled);
-                        context.report_terminal_progress(progress).await;
-                        return Err(AppError::TaskCancelled);
+                    );
+                    if let Some(message) = verification_message {
+                        if !context.log("info", message).await {
+                            mark_incomplete_layers(&mut progress, LayerStatus::Cancelled);
+                            context.report_terminal_progress(progress).await;
+                            return Err(AppError::TaskCancelled);
+                        }
                     }
                     let force_event = apply_blob_event(
                         &mut progress, &mut config_downloaded, &mut speeds, update,

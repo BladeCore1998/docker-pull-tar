@@ -133,6 +133,53 @@ pub struct DownloadStartRequest {
     pub password: Option<String>,
 }
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BatchStartRequest {
+    pub images: Vec<DownloadStartRequest>,
+    pub max_concurrent_images: u32,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum BatchStatus {
+    Queued,
+    Running,
+    Cancelling,
+    Completed,
+    PartialFailed,
+    Failed,
+    Cancelled,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum BatchTaskStatus {
+    Queued,
+    Running,
+    Completed,
+    Failed,
+    Cancelled,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BatchTaskSnapshot {
+    pub task_id: String,
+    pub image: ImageReference,
+    pub status: BatchTaskStatus,
+    pub download: DownloadSnapshot,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BatchSnapshot {
+    pub batch_id: String,
+    pub status: BatchStatus,
+    pub max_concurrent_images: u32,
+    pub tasks: Vec<BatchTaskSnapshot>,
+}
+
 impl fmt::Debug for DownloadStartRequest {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("DownloadStartRequest")

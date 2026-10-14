@@ -60,6 +60,22 @@ export interface DownloadStartRequest {
   password: string | null
 }
 
+export interface BatchStartRequest {
+  images: DownloadStartRequest[]
+  maxConcurrentImages: number
+}
+
+export type BatchStatus =
+  | 'queued'
+  | 'running'
+  | 'cancelling'
+  | 'completed'
+  | 'partial_failed'
+  | 'failed'
+  | 'cancelled'
+
+export type BatchTaskStatus = 'queued' | 'running' | 'completed' | 'failed' | 'cancelled'
+
 export type DownloadStatus =
   | 'idle'
   | 'preparing'
@@ -109,6 +125,20 @@ export interface DownloadSnapshot {
   startedAt: string | null
   finishedAt: string | null
   lastError: string | null
+}
+
+export interface BatchTaskSnapshot {
+  taskId: string
+  image: ImageReference
+  status: BatchTaskStatus
+  download: DownloadSnapshot
+}
+
+export interface BatchSnapshot {
+  batchId: string
+  status: BatchStatus
+  maxConcurrentImages: number
+  tasks: BatchTaskSnapshot[]
 }
 
 export interface TaskProgressEvent extends DownloadProgress {

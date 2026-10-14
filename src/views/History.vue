@@ -184,19 +184,18 @@ const commandErrorMessage = (error: unknown, fallback: string): string => {
 
 <style scoped>
 .history-page {
-  padding: 20px;
-  max-width: 960px;
+  padding: 24px;
+  max-width: 1040px;
   margin: 0 auto;
-  height: calc(100vh - 60px);
-  overflow: hidden;
-}
-.history-card {
-  height: 92%;
+  box-sizing: border-box;
 }
 .history-card :deep(.el-card__body) {
-  height: calc(100% - 60px);
-  overflow-y: auto;
-  padding: 20px;
+  padding: 0 24px 24px;
+}
+.history-card :deep(.el-card__header) {
+  padding: 20px 24px;
+  font-size: 20px;
+  font-weight: 600;
 }
 .card-header {
   display: flex;
@@ -209,13 +208,12 @@ const commandErrorMessage = (error: unknown, fallback: string): string => {
   gap: 12px;
 }
 .history-item {
-  background-color: #fafafa;
-  border: 1px solid #e4e7ed;
-  border-radius: 8px;
-  padding: 12px;
+  background-color: #f5f7fb;
+  border-radius: 12px;
+  padding: 16px;
 }
 .item-header {
-  font-weight: bold;
+  font-weight: 600;
   margin-bottom: 8px;
   display: flex;
   align-items: center;
@@ -235,15 +233,22 @@ const commandErrorMessage = (error: unknown, fallback: string): string => {
 .detail-label {
   color: #909399;
   width: 80px;
+  flex-shrink: 0;
 }
 .detail-value {
   color: #606266;
+  overflow-wrap: anywhere;
 }
 .detail-row.error .detail-value {
   color: #f56c6c;
 }
 .item-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
+}
+@media (max-width: 600px) {
+  .history-page { padding: 16px; }
+  .item-header { flex-wrap: wrap; }
 }
 </style>
